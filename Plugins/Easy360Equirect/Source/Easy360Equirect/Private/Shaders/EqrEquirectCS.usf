@@ -1,0 +1,51 @@
+#include "/Engine/Public/Platform.ush"
+RWTexture2D<float4> OutEqr;
+SamplerState        LinearClamp;
+TextureCube<float4> InCube;
+
+cbuffer FEqrCubeToEqrCS_Parameters
+{
+    float2 OutSize;
+    float2 ViewportMin;
+    float2 ViewportMax;
+    float4x4 RotMat;
+    float4 MiscFlags;
+};
+
+[forceinline]
+float3 LinearToSrgb(float3 Color)
+{
+    float3 Saturated = saturate(Color);
+    float3 Mask = step(float3(0.0031308f, 0.0031308f, 0.0031308f), Saturated);
+    float3 LinearSegment = Saturated * 12.92f;
+    float3 CurveSegment = 1.055f * pow(Saturated, 1.0f / 2.4f) - 0.055f;
+    return lerp(LinearSegment, CurveSegment, Mask);
+}
+
+[numthreads(8,8,1)]
+void Main(uint3 DTid : SV_DispatchThreadID)
+{
+    uint2 pix = DTid.xy;
+
+    if (pix.x < ViewportMin.x || pix.y < ViewportMin.y ||
+        pix.x >= ViewportMax.x || pix.y >= ViewportMax.y) return;
+
+    float2 uv = (float2(pix) - ViewportMin) / (ViewportMax - ViewportMin);
+
+    float lon = uv.x * 6.28318530718 - 3.14159265359;
+    float lat = (1.0 - uv.y) * 3.14159265359 - 1.57079632679;
+
+    float3 dir = float3(
+        cos(lat) * cos(lon),
+        sin(lat),
+       -cos(lat) * sin(lon));
+
+    float3 rdir = mul((float3x3)RotMat, dir);
+    float4 c = InCube.SampleLevel(LinearClamp, rdir, 0);
+    if (MiscFlags.x > 0.5f)
+    {
+        c.rgb = LinearToSrgb(c.rgb);
+        c.a = saturate(c.a);
+    }
+    OutEqr[pix] = c;
+}
