@@ -1,0 +1,16 @@
+{
+  "FileVersion": 3,
+  "Version": 200,
+  "VersionName": "2.0.0 (SAFE v6.0)",
+  "FriendlyName": "Easy360Equirect (Win64, Mono/Stereo + PNG/FFmpeg + Audio + UI + NVENC)",
+  "Description": "360 equirect via RDG/compute (cubemap->equirect). UE 5.4/5.5/5.6, Win64 only.",
+  "Category": "Rendering",
+  "EnabledByDefault": true,
+  "CanContainContent": false,
+  "IsBetaVersion": true,
+  "Modules": [
+    { "Name": "Easy360Equirect", "Type": "Runtime", "LoadingPhase": "Default" },
+    { "Name": "Easy360EquirectEditor", "Type": "Editor", "LoadingPhase": "PostEngineInit" }
+  ],
+  "SupportedTargetPlatforms": ["Win64"]
+}
