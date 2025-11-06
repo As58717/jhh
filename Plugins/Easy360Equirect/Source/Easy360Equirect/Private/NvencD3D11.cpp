@@ -7,6 +7,7 @@
 #include "HAL/PlatformProcess.h"
 #include "Misc/DateTime.h"
 #include "Misc/Paths.h"
+#include "Misc/ScopeExit.h"
 
 namespace
 {
@@ -140,6 +141,11 @@ bool FEasyNvencD3D11::Initialize(const FEasyNvencInit& Init)
         return false;
     }
 
+    const auto CloseSessionOnFailure = MakeScopeExit([this]()
+    {
+        DestroyEncoder();
+    });
+
     GUID CodecGUID = Init.bH265 ? NV_ENC_CODEC_HEVC_GUID : NV_ENC_CODEC_H264_GUID;
     GUID PresetGUID = NV_ENC_PRESET_P3_GUID;
     GUID ProfileGUID = Init.bH265 ? NV_ENC_HEVC_PROFILE_MAIN_GUID : NV_ENC_H264_PROFILE_HIGH_GUID;
@@ -194,9 +200,10 @@ bool FEasyNvencD3D11::Initialize(const FEasyNvencInit& Init)
     if (InitStatus != NV_ENC_SUCCESS)
     {
         UE_LOG(LogTemp, Warning, TEXT("[Easy360] nvEncInitializeEncoder failed: 0x%08x"), InitStatus);
-        DestroyEncoder();
         return false;
     }
+
+    CloseSessionOnFailure.Release();
 
     NV_ENC_CREATE_BITSTREAM_BUFFER CreateBS = {};
     CreateBS.version = NV_ENC_CREATE_BITSTREAM_BUFFER_VER;
